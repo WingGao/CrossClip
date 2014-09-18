@@ -2,11 +2,18 @@ from __future__ import with_statement
 import os
 import platform
 import StringIO
+from PIL import Image
 
 __author__ = 'wing'
 
 CL_TEXT = 0
 CL_IMAGE = 1
+
+
+def get_bmp_data(im):
+    output = StringIO.StringIO()
+    im.save(output, 'BMP')
+    return output.getvalue()
 
 
 class ClipContentItem():
@@ -22,7 +29,7 @@ class Clipboard(object):
     def paste(self):
         raise Exception('no method paste')
 
-    def copy(self):
+    def copy(self, item):
         raise Exception('no method copy')
 
 
@@ -40,21 +47,24 @@ class Clipboard_Win(Clipboard):
             item.cl_data = cp.value
         else:
             im = ImageGrab.grabclipboard()
-            item.cl_type = CL_IMAGE
-            output = StringIO.StringIO()
-            im.save(output, 'PNG')
-            output.seek(0)
-            item.cl_data = output.read()
-            output.close()
+            if im is not None:
+                item.cl_type = CL_IMAGE
+                output = StringIO.StringIO()
+                im.save(output, 'PNG')
+                output.seek(0)
+                item.cl_data = output.read()
+                output.close()
         ctypes.windll.user32.CloseClipboard()
+        return item
 
-    def copy(self):
-        pass
-
-
-def write_to_file(data):
-    with open('a.png', 'wb') as f:
-        f.write(data)
+    def copy(self, item):
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        if item.cl_type == CL_TEXT:
+            win32clipboard.SetClipboardData(win32clipboard.CF_TEXT, item.cl_data)
+        elif item.cl_type == CL_IMAGE:
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, item.cl_data[14:])
+        win32clipboard.CloseClipboard()
 
 
 class Clipboard_OSX(Clipboard):
@@ -63,12 +73,16 @@ class Clipboard_OSX(Clipboard):
         self.pb = NSPasteboard.generalPasteboard()
 
     def paste(self):
+        item = ClipContentItem()
         img = self._check_image_osx()
         if img is not None:
-            print img
+            item.cl_type = CL_IMAGE
+            item.cl_data = img
         else:
             text = self._check_text_osx()
-            print text
+            item.cl_type = CL_TEXT
+            item.cl_data = text
+        return item
 
     def _check_image_osx(self):
         pbImage = NSImage.alloc().initWithPasteboard_(self.pb)
@@ -85,6 +99,7 @@ class Clipboard_OSX(Clipboard):
 
 if os.name == 'nt' or platform.system() == 'Windows':
     import ctypes
+    import win32clipboard
     from PIL import ImageGrab
 
     Mypb = Clipboard_Win()
@@ -95,5 +110,22 @@ elif os.name == 'mac' or platform.system() == 'Darwin':
 else:
     raise Exception("unsupport platform")
 
-Mypb.paste()
+# cit = ClipContentItem()
+# cit.cl_type = CL_TEXT
+# cit.cl_data = 'hello'
+cit3 = ClipContentItem()
+cit3.cl_type = CL_IMAGE
+im = Image.open('2.png')
+cit3.cl_data = get_bmp_data(im)
+with open('a.bmp', 'wb') as f:
+    f.write(cit3.cl_data)
+Mypb.copy(cit3)
+cit2 = Mypb.paste()
+print cit2.cl_type, cit2.cl_data
+if cit2.cl_type == CL_TEXT:
+    print cit2.cl_data
+else:
+    with open('b.png', 'wb') as f:
+        f.write(cit2.cl_data)
+
 
