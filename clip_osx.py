@@ -1,6 +1,7 @@
 from __future__ import with_statement
 import os
 import platform
+import StringIO
 
 __author__ = 'wing'
 
@@ -19,7 +20,10 @@ class Clipboard(object):
         pass
 
     def paste(self):
-        raise Exception('no method')
+        raise Exception('no method paste')
+
+    def copy(self):
+        raise Exception('no method copy')
 
 
 class Clipboard_Win(Clipboard):
@@ -27,17 +31,30 @@ class Clipboard_Win(Clipboard):
         super(Clipboard_Win, self).__init__()
 
     def paste(self):
+        item = ClipContentItem()
+        ctypes.windll.user32.OpenClipboard(0)
+        pcontents = ctypes.windll.user32.GetClipboardData(1)  # 1 is CF_TEXT
+        if pcontents != 0:
+            cp = ctypes.c_char_p(pcontents)
+            item.cl_type = CL_TEXT
+            item.cl_data = cp.value
+        else:
+            im = ImageGrab.grabclipboard()
+            item.cl_type = CL_IMAGE
+            output = StringIO.StringIO()
+            im.save(output, 'PNG')
+            output.seek(0)
+            item.cl_data = output.read()
+            output.close()
+        ctypes.windll.user32.CloseClipboard()
+
+    def copy(self):
         pass
+
 
 def write_to_file(data):
     with open('a.png', 'wb') as f:
         f.write(data)
-
-
-def _check_image_win():
-    ctypes.windll.user32.OpenClipboard(0)  # 8 is CF_DIB
-
-    pass
 
 
 class Clipboard_OSX(Clipboard):
@@ -68,11 +85,15 @@ class Clipboard_OSX(Clipboard):
 
 if os.name == 'nt' or platform.system() == 'Windows':
     import ctypes
+    from PIL import ImageGrab
 
-    pass
+    Mypb = Clipboard_Win()
 elif os.name == 'mac' or platform.system() == 'Darwin':
     from AppKit import *
+
     Mypb = Clipboard_OSX()
+else:
+    raise Exception("unsupport platform")
 
 Mypb.paste()
 
