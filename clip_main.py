@@ -173,8 +173,7 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         item = pickle.loads(data)
         # print "{} wrote:".format(self.client_address[0])
         print item.cl_data
-        # # just send back the same data, but upper-cased
-        # socket.sendto('OK', self.client_address)
+        Mypb.copy(item)
 
 class ClipUDPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
@@ -254,5 +253,5 @@ if __name__ == '__main__':
 
     server_start()
     mointer = ClipMoniter()
-    # mointer.start()
-    mointer.check()
+    mointer.start()
+    #mointer.check()
