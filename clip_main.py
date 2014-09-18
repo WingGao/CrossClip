@@ -22,9 +22,11 @@ def get_bmp_data(im):
     im.save(output, 'BMP')
     return output.getvalue()
 
+
 def write_to_file(data):
-    with open('t.png' ,'wb') as f:
+    with open('t.png', 'wb') as f:
         f.write(data)
+
 
 class ClipContentItem():
     def __init__(self):
@@ -71,7 +73,7 @@ class Clipboard_Win(Clipboard):
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         if item.cl_type == CL_TEXT:
-            win32clipboard.SetClipboardData(win32clipboard.CF_TEXT, item.cl_data)
+            win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, item.cl_data.decode('utf8'))
         elif item.cl_type == CL_IMAGE:
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, item.cl_data[14:])
         win32clipboard.CloseClipboard()
@@ -97,7 +99,7 @@ class Clipboard_OSX(Clipboard):
 
     def copy(self, item):
         if item.cl_type == CL_TEXT:
-            self.pb.declareTypes_owner_(NSArray.arrayWithObject_(NSStringPboardType) ,None)
+            self.pb.declareTypes_owner_(NSArray.arrayWithObject_(NSStringPboardType), None)
             self.pb.setString_forType_(item.cl_data, NSStringPboardType)
         elif item.cl_type == CL_IMAGE:
             nsd = NSData.alloc().initWithBytes_length_(item.cl_data, len(item.cl_data))
@@ -118,6 +120,7 @@ class Clipboard_OSX(Clipboard):
     def _check_text_osx(self):
         pbString = self.pb.stringForType_(NSStringPboardType)
         return pbString.encode('utf8')
+
 
 if os.name == 'nt' or platform.system() == 'Windows':
     import ctypes
@@ -178,8 +181,10 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         LAST_ITEM = item
         Mypb.copy(item)
 
+
 class ClipUDPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
+
 
 def server_start():
     HOST, PORT = "0.0.0.0", CONFIG_PORT
@@ -187,6 +192,7 @@ def server_start():
     server_thread = threading.Thread(target=server.serve_forever)
     # server_thread.daemon = True
     server_thread.start()
+
 
 def sent_data_to_server(item):
     HOST, PORT = CONFIG_OTHER_HOST, CONFIG_PORT
@@ -206,10 +212,12 @@ def sent_data_to_server(item):
     finally:
         sock.close()
 
+
 def send_msg(sock, msg):
     # Prefix each message with a 4-byte length (network byte order)
     msg = struct.pack('>I', len(msg)) + msg
     sock.sendall(msg)
+
 
 def recv_msg(sock):
     # Read message length and unpack it into an integer
@@ -220,6 +228,7 @@ def recv_msg(sock):
     # Read the message data
     return recvall(sock, msglen)
 
+
 def recvall(sock, n):
     # Helper function to recv n bytes or return None if EOF is hit
     data = ''
@@ -229,6 +238,7 @@ def recvall(sock, n):
             return None
         data += packet
     return data
+
 
 class ClipMoniter():
     def check(self):
