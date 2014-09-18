@@ -72,4 +72,7 @@ if os.name == 'nt' or platform.system() == 'Windows':
     pass
 elif os.name == 'mac' or platform.system() == 'Darwin':
     from AppKit import *
+    Mypb = Clipboard_OSX()
+
+Mypb.paste()
 
