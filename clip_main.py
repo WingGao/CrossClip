@@ -1,3 +1,4 @@
+#coding:utf8
 from __future__ import with_statement
 import os
 import platform
@@ -173,6 +174,8 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         item = pickle.loads(data)
         # print "{} wrote:".format(self.client_address[0])
         print item.cl_data
+        global LAST_ITEM
+        LAST_ITEM = item
         Mypb.copy(item)
 
 class ClipUDPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -228,13 +231,11 @@ def recvall(sock, n):
     return data
 
 class ClipMoniter():
-    def __init__(self):
-        self.last_item = None
-
     def check(self):
+        global LAST_ITEM
         item = Mypb.paste()
-        if self.last_item == None or item.cl_type != self.last_item.cl_type or item.cl_data != self.last_item.cl_data:
-            self.last_item = item
+        if LAST_ITEM == None or item.cl_type != LAST_ITEM.cl_type or item.cl_data != LAST_ITEM.cl_data:
+            LAST_ITEM = item
             sent_data_to_server(item)
 
     def loop_check(self):
@@ -248,6 +249,7 @@ class ClipMoniter():
 
 CONFIG_PORT = 35000
 CONFIG_OTHER_HOST = '192.168.1.51'
+LAST_ITEM = None
 
 if __name__ == '__main__':
 
