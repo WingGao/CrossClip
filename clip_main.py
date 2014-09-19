@@ -19,19 +19,32 @@ CL_IMAGE = 1
 
 def get_bmp_data(im):
     output = StringIO.StringIO()
-    im.save(output, 'BMP')
+    im.convert('RGB').save(output, 'BMP')
     return output.getvalue()
 
 
 def write_to_file(data):
-    with open('t.png', 'wb') as f:
+    with open('%d.png' % time.time(), 'wb') as f:
         f.write(data)
+
+
+def show_img(data):
+    s = StringIO.StringIO(data)
+    im = Image.open(s)
+    im.show()
 
 
 class ClipContentItem():
     def __init__(self):
         self.cl_type = None
         self.cl_data = None
+
+    def to_bmp_data(self):
+        if self.cl_type == CL_IMAGE:
+            sdata = StringIO.StringIO(self.cl_data)
+            im = Image.open(sdata)
+            return get_bmp_data(im)
+        return None
 
 
 class Clipboard(object):
@@ -75,7 +88,7 @@ class Clipboard_Win(Clipboard):
         if item.cl_type == CL_TEXT:
             win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, item.cl_data.decode('utf8'))
         elif item.cl_type == CL_IMAGE:
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, item.cl_data[14:])
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, item.to_bmp_data()[14:])
         win32clipboard.CloseClipboard()
 
 
@@ -145,7 +158,12 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         # socket = self.request[1]
         item = pickle.loads(data)
         # print "{} wrote:".format(self.client_address[0])
-        print item.cl_data
+        if item.cl_type == CL_IMAGE:
+            print 'img'
+            write_to_file(item.cl_data)
+            # show_img(item.cl_data)
+        else:
+            print item.cl_data
         global LAST_ITEM
         LAST_ITEM = item
         Mypb.copy(item)
