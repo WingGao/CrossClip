@@ -27,4 +27,5 @@ def test_paste_img():
         with open('b.png', 'wb') as f:
             f.write(cit2.cl_data)
 
-test_paste_img()
+mointer = ClipMoniter()
+mointer.check()
