@@ -107,6 +107,7 @@ class Clipboard_OSX(Clipboard):
         else:
             text = self._check_text_osx()
             item.cl_type = CL_TEXT
+            #type(cl_data) is str
             item.cl_data = text
         return item
 
@@ -157,10 +158,10 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         # data = self.request[0]
         # socket = self.request[1]
         item = pickle.loads(data)
-        # print "{} wrote:".format(self.client_address[0])
+        print "{} wrote:".format(self.client_address[0])
         if item.cl_type == CL_IMAGE:
             print 'img'
-            write_to_file(item.cl_data)
+            # write_to_file(item.cl_data)
             # show_img(item.cl_data)
         else:
             print item.cl_data
@@ -190,6 +191,7 @@ def sent_data_to_server(item):
     try:
         # Connect to server and send data
         sock.connect((HOST, PORT))
+        print 'Send: {}'.format(item.cl_data)
         send_msg(sock, pickle.dumps(item))
         # sock.sendall(pickle.dumps(item))
 
