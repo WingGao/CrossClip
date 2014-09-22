@@ -64,12 +64,15 @@ class Clipboard_Win(Clipboard):
 
     def paste(self):
         item = ClipContentItem()
-        ctypes.windll.user32.OpenClipboard(0)
-        pcontents = ctypes.windll.user32.GetClipboardData(1)  # 1 is CF_TEXT
-        if pcontents != 0:
-            cp = ctypes.c_char_p(pcontents)
+        win32clipboard.OpenClipboard()
+        try:
+            data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
+        except TypeError:
+            data = None
+        win32clipboard.CloseClipboard()
+        if data is not None:
             item.cl_type = CL_TEXT
-            item.cl_data = cp.value
+            item.cl_data = data.encode('utf8')
         else:
             im = ImageGrab.grabclipboard()
             if im is not None:
@@ -79,7 +82,6 @@ class Clipboard_Win(Clipboard):
                 output.seek(0)
                 item.cl_data = output.read()
                 output.close()
-        ctypes.windll.user32.CloseClipboard()
         return item
 
     def copy(self, item):
@@ -136,7 +138,6 @@ class Clipboard_OSX(Clipboard):
 
 
 if os.name == 'nt' or platform.system() == 'Windows':
-    import ctypes
     import win32clipboard
     from PIL import ImageGrab
 
@@ -165,8 +166,8 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         else:
             print item.cl_data
         global LAST_ITEM
-        LAST_ITEM = item
         Mypb.copy(item)
+        LAST_ITEM = Mypb.paste()
 
 
 class ClipUDPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -231,7 +232,7 @@ class ClipMoniter():
     def check(self):
         global LAST_ITEM
         item = Mypb.paste()
-        if LAST_ITEM == None or item.cl_type != LAST_ITEM.cl_type or item.cl_data != LAST_ITEM.cl_data:
+        if LAST_ITEM == None or item.cl_data != LAST_ITEM.cl_data:
             LAST_ITEM = item
             sent_data_to_server(item)
 
