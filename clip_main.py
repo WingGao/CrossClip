@@ -61,15 +61,18 @@ class Clipboard(object):
 class Clipboard_Win(Clipboard):
     def __init__(self):
         super(Clipboard_Win, self).__init__()
+        self.lock = threading.Lock()
 
     def paste(self):
         item = ClipContentItem()
+        self.lock.acquire()
         win32clipboard.OpenClipboard()
         try:
             data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
         except TypeError:
             data = None
         win32clipboard.CloseClipboard()
+        self.lock.release()
         if data is not None:
             item.cl_type = CL_TEXT
             item.cl_data = data.encode('utf8')
@@ -85,6 +88,7 @@ class Clipboard_Win(Clipboard):
         return item
 
     def copy(self, item):
+        self.lock.acquire()
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         if item.cl_type == CL_TEXT:
@@ -92,6 +96,7 @@ class Clipboard_Win(Clipboard):
         elif item.cl_type == CL_IMAGE:
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, item.to_bmp_data()[14:])
         win32clipboard.CloseClipboard()
+        self.lock.release()
 
 
 class Clipboard_OSX(Clipboard):
