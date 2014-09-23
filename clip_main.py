@@ -1,4 +1,4 @@
-#coding:utf8
+# coding:utf8
 from __future__ import with_statement
 import os
 import platform
@@ -103,7 +103,7 @@ class Clipboard_OSX(Clipboard):
         item = ClipContentItem()
         img = self._check_image_osx()
         if img is not None:
-            write_to_file(img)
+            # write_to_file(img)
             item.cl_type = CL_IMAGE
             item.cl_data = img
         else:
@@ -135,7 +135,10 @@ class Clipboard_OSX(Clipboard):
 
     def _check_text_osx(self):
         pbString = self.pb.stringForType_(NSStringPboardType)
-        return pbString.encode('utf8')
+        try:
+            return pbString.encode('utf8')
+        except:
+            pass
 
 
 if os.name == 'nt' or platform.system() == 'Windows':
@@ -167,8 +170,9 @@ class ClipHandler(SocketServer.BaseRequestHandler):
         else:
             print item.cl_data
         global LAST_ITEM
-        Mypb.copy(item)
-        LAST_ITEM = Mypb.paste()
+        if item.cl_data is not None:
+            Mypb.copy(item)
+            LAST_ITEM = Mypb.paste()
 
 
 class ClipUDPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -234,7 +238,7 @@ class ClipMoniter():
     def check(self):
         global LAST_ITEM
         item = Mypb.paste()
-        if LAST_ITEM == None or item.cl_data != LAST_ITEM.cl_data:
+        if LAST_ITEM is None or (item.cl_data is not None and item.cl_data != LAST_ITEM.cl_data):
             LAST_ITEM = item
             sent_data_to_server(item)
 
@@ -247,12 +251,12 @@ class ClipMoniter():
         s = threading.Thread(target=self.loop_check)
         s.start()
 
+
 CONFIG_PORT = 35000
 CONFIG_OTHER_HOST = '192.168.1.51'
 LAST_ITEM = None
 
 if __name__ == '__main__':
-
     server_start()
     mointer = ClipMoniter()
     mointer.start()
